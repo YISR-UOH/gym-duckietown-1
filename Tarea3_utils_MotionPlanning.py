@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import math
+
 
 def yellow(obs):
     lower = np.array([25, 100, 100]) 
@@ -8,7 +10,7 @@ def yellow(obs):
     kernel = np.ones((3,3), np.uint8)
     _, img_bin = cv2.threshold(mask, 100, 255, cv2.THRESH_BINARY)
     img_er = cv2.erode(img_bin, kernel, iterations=1)
-    img_amarillo = cv2.dilate(img_er, kernel, iterations=3)
+    img_amarillo = cv2.dilate(img_er, kernel, iterations=4)
     return img_amarillo
   
 def red(obs):
@@ -18,7 +20,7 @@ def red(obs):
     kernel = np.ones((2,2), np.uint8)
     _, img_bin = cv2.threshold(mascara_rojo, 100, 255, cv2.THRESH_BINARY)
     img_er_rojo = cv2.erode(img_bin, kernel, iterations=1)
-    img_rojo = cv2.dilate(img_er_rojo, kernel, iterations=3)
+    img_rojo = cv2.dilate(img_er_rojo, kernel, iterations=4)
     return img_rojo
   
 def white(obs):
@@ -28,7 +30,7 @@ def white(obs):
     kernel = np.ones((5,5), np.uint8)
     _, img_bin = cv2.threshold(mascara_blanco, 100, 255, cv2.THRESH_BINARY)
     img_er = cv2.erode(img_bin, kernel, iterations=2)
-    img_blanco = cv2.dilate(img_er, kernel, iterations=4)
+    img_blanco = cv2.dilate(img_er, kernel, iterations=5)
     return img_blanco
 
 def hough_canny(imagen, umbral_min, umbral_max,theta=180,rho=1,threshold=100):
@@ -59,6 +61,28 @@ def mostrar_lineas(imagen, lines,longitud_maxima = 1000,color = (0, 255, 255)):
             cv2.line(imagen, (x1, y1), (x2, y2), color, 2)
       return imagen
     return imagen
+
+def mostrar_lineas2(imagen, lines,color ,flag):
+    if lines is None:
+        return imagen
+    for line in lines:
+        # considerar los puntos que esten debajo del 50% de la imagen
+        for x1, y1, x2, y2 in line:
+            if x1 > imagen.shape[0] * 0.6 and x2 > imagen.shape[0] * 0.6:
+                continue
+            if y1 < imagen.shape[1] * 0.3 and y2 < imagen.shape[1] * 0.3:
+                continue
+            angle = math.degrees(math.atan2(y2 - y1, x2 - x1))
+            
+            # Clasificar la línea basada en su ángulo
+            if abs(angle) < 10 and flag=="red":  # Línea horizontal
+                cv2.line(imagen, (x1, y1), (x2, y2), color, 2)
+            elif 10 <= abs(angle) < 80 and flag=="vias":  # Línea levemente inclinada
+                cv2.line(imagen, (x1, y1), (x2, y2), color, 2)
+            elif 70 <= abs(angle) <= 100 and flag!="red":  # Línea vertical
+                cv2.line(imagen, (x1, y1), (x2, y2), color, 2)
+    return imagen
+
   
 def lines_hs(red, yellow, white):
     red_hs = hough_sobel(red, 50, 150,theta=100,rho=1.5,threshold=120)

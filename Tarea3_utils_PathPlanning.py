@@ -228,7 +228,6 @@ def Path(data,pointA,pointB):
     end_node = data.loc[data["pos"] == (pointB[0],pointB[1])]["node"].values[0]
     path,cost = Astar(data,start_node, end_node)
     if cost == float('inf'):
-      print("No se encontro camino")
       return None,None
     return path,cost
   except Exception as e:
@@ -244,7 +243,6 @@ def data_map(data):
     matriz = np.zeros((y+1, x+1))
     for i in data:
         matriz[i[0][1], i[0][0]] = i[2]
-    print(matriz.shape)
     n = 2
     matriz,map_data = upscale(n, data)
     data = connect_sectors(n, map_data,matriz)

@@ -24,7 +24,7 @@ from gym_duckietown.wrappers import UndistortWrapper
 import time
 import Tarea3_utils as tarea3
 import Tarea3_utils_PathPlanning as tpp
-
+import math
 # from experiments.utils import save_img
 
 parser = argparse.ArgumentParser()
@@ -86,8 +86,10 @@ def get_pos():
     else:
         y1 = 0
     return (int(y0*n+y1),int(x0*n+x1))
+
 PointA = get_pos()
 path,_ = tpp.Path(data,PointA,PointB)
+
 def update_Path(dt):
     global matrix
     global data
@@ -122,33 +124,23 @@ def Path_planning():
     cv2.imshow("Path_Planning", copia)
 
     
-    cpia2 = image_data.copy()
-    cv2.imshow("top", cpia2)
+    #cpia2 = image_data.copy()
+    #cv2.imshow("top", cpia2)
 
-cv2.namedWindow("Motion_Planning", cv2.WINDOW_NORMAL)
-cv2.namedWindow("Líneas Amarillas", cv2.WINDOW_NORMAL)
-cv2.namedWindow("Líneas Rojas", cv2.WINDOW_NORMAL)
-cv2.namedWindow("Orilla Gris", cv2.WINDOW_NORMAL)
-def Motion_Planning(obs):
-    import Tarea3_utils_MotionPlanning as tmp
-    
-    hsv = cv2.cvtColor(obs, cv2.COLOR_BGR2HSV)
-    vias = tmp.yellow(hsv)
-    stop = tmp.red(hsv)
-    vereda = tmp.white(hsv) 
-    
-    if vias is not None:
-        cv2.imshow('Líneas Amarillas', vias)
-    if stop is not None:
-        cv2.imshow('Líneas Rojas', stop)
-    if vereda is not None:  
-        cv2.imshow('Orilla Gris', vereda)
-    cv2.imshow("Motion_Planning", obs)
-    
-    return None
-    
 #-----------------------------------------
-
+num_img = 0
+copy_obs = None
+def save_img(dt):
+    """
+    Save an image as a PNG
+    """
+    global num_img
+    global copy_obs
+    if copy_obs is None:
+        pass
+    im = Image.fromarray(copy_obs)
+    im.save('s_'+str(num_img)+'.png')
+    num_img += 1
 
 @env.unwrapped.window.event
 def on_key_press(symbol, modifiers):
@@ -168,7 +160,6 @@ def on_key_press(symbol, modifiers):
     elif symbol == key.PAGEUP:
         env.unwrapped.cam_angle[0] = 0
     elif symbol == key.ESCAPE:
-        print(PointA,PointB)
         env.close()
         sys.exit(0)
 
@@ -188,7 +179,7 @@ def update(dt):
     movement/stepping and redrawing
     """
     global flag
-    
+    global copy_obs
     action = np.array([0.0, 0.0])
     if key_handler[key.UP]:
         action = np.array([0.44, 0.0])
@@ -206,8 +197,9 @@ def update(dt):
 
     obs, reward, done, info = env.step(action)
     obs = cv2.cvtColor(obs, cv2.COLOR_BGR2RGB)
-    # print('step_count = %s, reward=%.3f' % (env.unwrapped.step_count, reward))
-
+    copy_obs = obs.copy()
+    #print('step_count = %s, reward=%.3f' % (env.unwrapped.step_count, reward))
+    cv2.imshow("top", obs)
     if done:
         #print('done!')
         #env.reset()
@@ -225,11 +217,11 @@ def update(dt):
     cv2.waitKey(1)
     env.render(mode="top_down")
     Path_planning()
-    Motion_Planning(obs)
     
 
 pyglet.clock.schedule_interval(update, 0.5 / env.unwrapped.frame_rate)
 pyglet.clock.schedule_interval(update_Path, 10 / env.unwrapped.frame_rate)
+pyglet.clock.schedule_interval(save_img, 10 / env.unwrapped.frame_rate)
 # Enter main event loop
 pyglet.app.run()
 
